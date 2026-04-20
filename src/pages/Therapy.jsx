@@ -9,12 +9,20 @@ export default function Therapy() {
   const location = useLocation();
   const { isConnected, startTherapy, stopTherapy, sessionActive, demoMode } = useBluetooth();
   const { addToast } = useToast();
-  const { demoActive, startDemoEngine, stopDemoEngine, demoState } = useDemoEngine(demoMode);
+  const { demoActive, startDemoEngine, stopDemoEngine, updateDemoAudio, demoState } = useDemoEngine(demoMode);
+
+  // Global listener for Audio Engine Toasts
+  useEffect(() => {
+    const handleToast = (e) => addToast(e.detail.message, e.detail.type);
+    window.addEventListener('neuroease-toast', handleToast);
+    return () => window.removeEventListener('neuroease-toast', handleToast);
+  }, [addToast]);
   
   const [modes, setModes] = useState({ vibration: false, light: false, audio: false });
   const [vibrationIntensity, setIntensity] = useState(5);
   const [lightColor, setLightColor] = useState({ r: 255, g: 255, b: 255 });
   const [trackId, setTrackId] = useState(1);
+  const [audioVolume, setAudioVolume] = useState(50);
   const [duration, setDuration] = useState(10);
   const [timerLeft, setTimerLeft] = useState(null);
 
@@ -40,6 +48,12 @@ export default function Therapy() {
     }
     return () => clearInterval(interval);
   }, [sessionActive, demoActive, timerLeft, demoMode]);
+
+  useEffect(() => {
+    if (demoMode && demoActive && modes.audio) {
+      updateDemoAudio(trackId, audioVolume);
+    }
+  }, [trackId, audioVolume, demoActive, demoMode, modes.audio]);
 
   const selectMode = (mode) => {
     if (mode === 'vibration') {
@@ -78,7 +92,7 @@ export default function Therapy() {
     setTimerLeft(duration * 60);
 
     if (demoMode) {
-      startDemoEngine(modes, { vibrationIntensity, r: lightColor.r, g: lightColor.g, b: lightColor.b, trackId }, duration);
+      startDemoEngine(modes, { vibrationIntensity, audioVolume, r: lightColor.r, g: lightColor.g, b: lightColor.b, trackId }, duration);
       addToast('Demo Therapy started on this device', 'info');
     } else {
       startTherapy(modes, { vibrationIntensity, r: lightColor.r, g: lightColor.g, b: lightColor.b, trackId });
@@ -141,7 +155,7 @@ export default function Therapy() {
       {modes.audio && (
         <section style={{ marginBottom: '24px', backgroundColor: 'var(--bg-card)', padding: '16px', borderRadius: 'var(--radius-card)' }}>
           <span style={{ fontWeight: 600, display: 'block', marginBottom: '12px' }}>Audio Track</span>
-          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '16px' }}>
             {['🌊 Ocean', '🌧️ Rain', '🎵 Binaural', '🧘 432Hz', '🌿 Forest'].map((t, idx) => (
               <button 
                 key={idx}
@@ -157,6 +171,17 @@ export default function Therapy() {
               >{t}</button>
             ))}
           </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', marginTop: '8px' }}>
+            <span style={{ fontWeight: 600 }}>Volume</span>
+            <span style={{ color: 'var(--color-primary)' }}>{audioVolume}%</span>
+          </div>
+          <input 
+            type="range" min="0" max="100" 
+            value={audioVolume}
+            onChange={(e) => setAudioVolume(Number(e.target.value))}
+            style={{ width: '100%', accentColor: 'var(--color-primary)' }}
+          />
         </section>
       )}
 
