@@ -41,11 +41,15 @@ export default function Therapy() {
     return () => clearInterval(interval);
   }, [sessionActive, demoActive, timerLeft, demoMode]);
 
-  const toggleMode = (mode) => {
-    if (mode === 'combined') {
+  const selectMode = (mode) => {
+    if (mode === 'vibration') {
+      setModes({ vibration: true, light: false, audio: false });
+    } else if (mode === 'light') {
+      setModes({ vibration: false, light: true, audio: false });
+    } else if (mode === 'audio') {
+      setModes({ vibration: false, light: false, audio: true });
+    } else if (mode === 'combined') {
       setModes({ vibration: true, light: true, audio: true });
-    } else {
-      setModes(prev => ({ ...prev, [mode]: !prev[mode] }));
     }
   };
 
@@ -108,10 +112,10 @@ export default function Therapy() {
       <section style={{ marginBottom: '24px' }}>
         <h3 style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '12px' }}>SELECT MODE</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <ModeCard active={modes.vibration && !modes.light && !modes.audio} icon={<Activity />} title="Vibration" onClick={() => toggleMode('vibration')} />
-          <ModeCard active={modes.light && !modes.vibration && !modes.audio} icon={<Lightbulb />} title="Light" onClick={() => toggleMode('light')} />
-          <ModeCard active={modes.audio && !modes.light && !modes.vibration} icon={<Music />} title="Audio" onClick={() => toggleMode('audio')} />
-          <ModeCard active={modes.vibration && modes.light && modes.audio} icon={<Layers />} title="Combined" onClick={() => toggleMode('combined')} />
+          <ModeCard active={modes.vibration && !modes.light && !modes.audio} icon={<Activity />} title="Vibration" onClick={() => selectMode('vibration')} />
+          <ModeCard active={modes.light && !modes.vibration && !modes.audio} icon={<Lightbulb />} title="Light" onClick={() => selectMode('light')} />
+          <ModeCard active={modes.audio && !modes.light && !modes.vibration} icon={<Music />} title="Audio" onClick={() => selectMode('audio')} />
+          <ModeCard active={modes.vibration && modes.light && modes.audio} icon={<Layers />} title="Combined" onClick={() => selectMode('combined')} />
         </div>
       </section>
 
@@ -265,9 +269,15 @@ function ModeCard({ active, icon, title, onClick }) {
       style={{
         backgroundColor: 'var(--bg-card)',
         padding: '16px',
+        minHeight: '80px',
         borderRadius: 'var(--radius-card)',
         border: `2px solid ${active ? 'var(--color-primary)' : 'var(--border-color)'}`,
         cursor: 'pointer',
+        position: 'relative',
+        zIndex: 1,
+        WebkitTapHighlightColor: 'transparent',
+        touchAction: 'manipulation',
+        userSelect: 'none',
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
