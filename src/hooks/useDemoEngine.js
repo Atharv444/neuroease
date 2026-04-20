@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
 const TRACK_URLS = {
-  1: "https://cdn.pixabay.com/audio/2022/03/10/audio_270f626a24.mp3",
-  2: "https://cdn.pixabay.com/audio/2022/05/13/audio_257112ce95.mp3",
-  3: "https://cdn.pixabay.com/audio/2023/03/14/audio_6d5b7c6310.mp3",
-  4: "https://cdn.pixabay.com/audio/2022/10/30/audio_946f4a6e77.mp3",
-  5: "https://cdn.pixabay.com/audio/2022/03/21/audio_4f5f2f51f4.mp3"
+  1: "/audio/ocean.mp3",
+  2: "/audio/rain.mp3",
+  3: "/audio/binaural.mp3",
+  4: "/audio/tone432.mp3",
+  5: "/audio/forest.mp3"
 };
 
 export default function useDemoEngine(demoMode) {
