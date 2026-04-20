@@ -1,0 +1,95 @@
+:root {
+  /*
+  Color Palette
+  Background: #0A0A0F
+  Card surface: #13131A
+  Border: #1E1E2E
+  Primary: #7C6AF7 (soft violet)
+  Accent: #4FC3F7 (calm blue)
+  Text primary: #E8E8F0
+  Text muted: #6B6B8A
+  Success: #4CAF82
+  Warning: #E8A838
+  Danger: #E85555
+  */
+  --bg-main: #0A0A0F;
+  --bg-card: #13131A;
+  --border-color: #1E1E2E;
+  
+  --color-primary: #7C6AF7;
+  --color-primary-glow: rgba(124, 106, 247, 0.3);
+  --color-accent: #4FC3F7;
+  
+  --text-primary: #E8E8F0;
+  --text-muted: #6B6B8A;
+  
+  --color-success: #4CAF82;
+  --color-warning: #E8A838;
+  --color-danger: #E85555;
+  
+  --radius-card: 16px;
+  --radius-btn: 12px;
+  
+  --transition: 200ms ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mobile-first centered container on desktop */
+#root {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  background-color: var(--bg-main);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Typography styles */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all var(--transition);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Custom Scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
