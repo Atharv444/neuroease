@@ -25,6 +25,11 @@ export default function Therapy() {
   const [audioVolume, setAudioVolume] = useState(50);
   const [duration, setDuration] = useState(10);
   const [timerLeft, setTimerLeft] = useState(null);
+  
+  const [showPreModal, setShowPreModal] = useState(false);
+  const [showPostModal, setShowPostModal] = useState(false);
+  const [painBefore, setPainBefore] = useState(null);
+  const [painAfter, setPainAfter] = useState(null);
 
   useEffect(() => {
     if (location.state?.preset) {
@@ -67,7 +72,7 @@ export default function Therapy() {
     }
   };
 
-  const saveToHistory = () => {
+  const saveToHistory = (before, after) => {
     const history = JSON.parse(localStorage.getItem('neuroHistory')) || [];
     const modeName = 
       (modes.vibration && modes.light && modes.audio) ? 'Combined' :
@@ -81,14 +86,15 @@ export default function Therapy() {
       duration,
       mode: modeName,
       feedback: null,
-      demo: demoMode
+      demo: demoMode,
+      painBefore: before,
+      painAfter: after
     };
 
     localStorage.setItem('neuroHistory', JSON.stringify([newSession, ...history]));
   };
 
-  const handleStart = () => {
-    if (!demoMode && !isConnected) return;
+  const startTherapyEngine = () => {
     setTimerLeft(duration * 60);
 
     if (demoMode) {
@@ -99,15 +105,38 @@ export default function Therapy() {
     }
   };
 
+  const handleStart = () => {
+    if (!demoMode && !isConnected) return;
+    if (painBefore === null) {
+      setShowPreModal(true);
+      return;
+    }
+    startTherapyEngine();
+  };
+
+  const handlePreModalSubmit = (val) => {
+    setPainBefore(val);
+    setShowPreModal(false);
+    startTherapyEngine();
+  };
+
   const handleStop = () => {
     if (demoMode) {
       stopDemoEngine();
-      addToast('Demo session complete. Session saved to history.', 'success');
+      addToast('Demo session complete. Please rate your pain.', 'success');
     } else {
       stopTherapy();
     }
-    saveToHistory();
     setTimerLeft(null);
+    setShowPostModal(true);
+  };
+
+  const handlePostModalSubmit = (val) => {
+    setPainAfter(val);
+    saveToHistory(painBefore, val);
+    setShowPostModal(false);
+    setPainBefore(null);
+    setPainAfter(null);
   };
 
   const formatTime = (seconds) => {
@@ -283,6 +312,90 @@ export default function Therapy() {
           STOP THERAPY
         </button>
       )}
+
+      {showPreModal && (
+        <PainModal 
+          title="How is your pain right now?" 
+          subtitle="Rate your pain level before therapy" 
+          buttonText="Start Therapy"
+          onSubmit={handlePreModalSubmit}
+        />
+      )}
+
+      {showPostModal && (
+        <PainModal 
+          title="How is your pain now?" 
+          subtitle="Rate your pain level after therapy" 
+          buttonText="Save Session"
+          onSubmit={handlePostModalSubmit}
+        />
+      )}
+    </div>
+  );
+}
+
+function PainModal({ title, subtitle, buttonText, onSubmit }) {
+  const [selected, setSelected] = useState(null);
+
+  const getColor = (num) => {
+    if (num <= 3) return '#4CAF82';
+    if (num <= 6) return '#E8A838';
+    return '#E85555';
+  };
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+      backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 100, display: 'flex',
+      justifyContent: 'center', alignItems: 'flex-end', paddingBottom: '24px'
+    }}>
+      <div style={{
+        backgroundColor: 'var(--bg-main)', width: '100%', maxWidth: '400px',
+        borderRadius: '24px', padding: '24px', border: '1px solid var(--border-color)',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.5)', textAlign: 'center',
+        margin: '0 16px'
+      }}>
+        <h2 style={{ fontSize: '20px', marginBottom: '8px' }}>{title}</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '24px' }}>{subtitle}</p>
+        
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '4px', marginBottom: '32px' }}>
+          {[1,2,3,4,5,6,7,8,9,10].map(num => {
+            const color = getColor(num);
+            const isSelected = selected === num;
+            return (
+              <button
+                key={num}
+                onClick={() => setSelected(num)}
+                style={{
+                  width: '30px', height: '30px', borderRadius: '50%',
+                  border: isSelected ? `2px solid ${color}` : '1px solid var(--border-color)',
+                  backgroundColor: isSelected ? 'transparent' : 'var(--bg-card)',
+                  color: isSelected ? color : 'var(--text-primary)',
+                  fontWeight: 'bold', fontSize: '14px',
+                  boxShadow: isSelected ? `0 0 12px ${color}80` : 'none',
+                  display: 'flex', justifyContent: 'center', alignItems: 'center',
+                  padding: 0
+                }}
+              >
+                {num}
+              </button>
+            )
+          })}
+        </div>
+
+        <button
+          onClick={() => onSubmit(selected)}
+          disabled={selected === null}
+          style={{
+            width: '100%', padding: '16px', borderRadius: 'var(--radius-btn)',
+            backgroundColor: selected === null ? 'var(--bg-card)' : 'var(--color-primary)',
+            color: selected === null ? 'var(--text-muted)' : 'white',
+            fontWeight: 'bold', fontSize: '16px', border: 'none', cursor: selected === null ? 'not-allowed' : 'pointer'
+          }}
+        >
+          {buttonText}
+        </button>
+      </div>
     </div>
   );
 }
