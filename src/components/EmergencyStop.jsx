@@ -1,12 +1,19 @@
 import React from 'react';
 import { useBluetooth } from '../context/BluetoothContext';
+import { stopDemoTherapy } from '../agent/executor';
 
 export default function EmergencyStop() {
   const { stopTherapy } = useBluetooth();
 
+  const handleEmergencyStop = () => {
+    stopTherapy();
+    stopDemoTherapy();
+  };
+
   return (
     <button
-      onClick={stopTherapy}
+      id="emergency-stop-btn"
+      onClick={handleEmergencyStop}
       style={{
         position: 'fixed',
         bottom: '100px', // above bottom nav

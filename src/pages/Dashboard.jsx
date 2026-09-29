@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBluetooth } from '../context/BluetoothContext';
 import { useToast } from '../context/ToastContext';
-import { Bluetooth, Zap, Moon, Focus, Flame, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Bluetooth, Zap, Moon, Focus, Flame, ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react';
+import AIAgentModal from '../components/AIAgentModal';
+import { buildUserMemory } from '../agent/memory';
+import { getDashboardInsights } from '../agent/orchestrator';
 
 export default function Dashboard() {
   const { isConnected, connect, batteryLevel, signalStrength, activeComponents, demoMode, toggleDemoMode } = useBluetooth();
@@ -10,6 +13,9 @@ export default function Dashboard() {
   const { addToast } = useToast();
   const [userName, setUserName] = useState('Friend');
   const [lastSession, setLastSession] = useState(null);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [agentInsights, setAgentInsights] = useState([]);
+  const [showInsights, setShowInsights] = useState(false);
 
   useEffect(() => {
     const name = localStorage.getItem('neuroName');
@@ -19,6 +25,83 @@ export default function Dashboard() {
       const history = JSON.parse(localStorage.getItem('neuroHistory')) || [];
       if (history.length > 0) setLastSession(history[0]);
     } catch(e) {}
+  }, []);
+
+  // Loop 5: Proactive Dashboard Agent (Background fetch & 6-hr / new-session caching)
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadAgentInsights() {
+      try {
+        const rawHistory = localStorage.getItem('neuroHistory');
+        const sessions = rawHistory ? JSON.parse(rawHistory) : [];
+
+        // FIX A: Show if 3+ ANY sessions exist with painBefore and painAfter data
+        const eligibleSessions = sessions.filter(s => 
+          s.painBefore !== undefined && 
+          s.painAfter !== undefined
+        );
+        const showInsights = eligibleSessions.length >= 3;
+        if (!isCancelled) setShowInsights(showInsights);
+
+        if (!showInsights) {
+          if (!isCancelled) setAgentInsights([]);
+          return;
+        }
+
+        const latestSessionId = sessions.length > 0 ? sessions[0].id : null;
+        const now = Date.now();
+        const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+
+        // FIX C: Support agentInsightsCache & agentInsightsCacheTime
+        const cachedRaw = localStorage.getItem('agentInsightsCache') || localStorage.getItem('neuroease_agent_insights');
+        const cachedTime = localStorage.getItem('agentInsightsCacheTime');
+
+        if (cachedRaw) {
+          try {
+            let cachedList = null;
+            let timestamp = cachedTime ? parseInt(cachedTime, 10) : null;
+            const parsed = JSON.parse(cachedRaw);
+            if (Array.isArray(parsed)) {
+              cachedList = parsed;
+            } else if (parsed && Array.isArray(parsed.insights)) {
+              cachedList = parsed.insights;
+              if (!timestamp && parsed.timestamp) timestamp = parsed.timestamp;
+            }
+
+            const isFresh = timestamp ? (now - timestamp < SIX_HOURS_MS) : true;
+            if (isFresh && cachedList && cachedList.length > 0) {
+              if (!isCancelled) setAgentInsights(cachedList);
+              return;
+            }
+          } catch (e) {
+            console.warn('Cached insights parse error:', e);
+          }
+        }
+
+        const memoryStr = buildUserMemory();
+        if (!memoryStr) return;
+
+        const results = await getDashboardInsights(memoryStr);
+        if (!isCancelled && Array.isArray(results) && results.length > 0) {
+          setAgentInsights(results);
+          try {
+            localStorage.setItem('agentInsightsCache', JSON.stringify(results));
+            localStorage.setItem('agentInsightsCacheTime', now.toString());
+            localStorage.setItem('neuroease_agent_insights', JSON.stringify({
+              timestamp: now,
+              lastSessionId: latestSessionId,
+              insights: results
+            }));
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.warn('Dashboard insights background error:', err);
+      }
+    }
+
+    loadAgentInsights();
+    return () => { isCancelled = true; };
   }, []);
 
   const getGreeting = () => {
@@ -182,6 +265,63 @@ export default function Dashboard() {
 
           <section style={{ marginBottom: '24px' }}>
             <h3 style={{ fontSize: '16px', marginBottom: '12px', color: 'var(--text-muted)' }}>Quick Start</h3>
+            
+            {/* AI Agent Card */}
+            <div 
+              id="ai-agent-card"
+              onClick={() => setIsAIModalOpen(true)}
+              style={{
+                background: 'linear-gradient(135deg, #7C6AF7 0%, #5E4EE6 100%)',
+                borderRadius: 'var(--radius-card)',
+                padding: '16px 18px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                boxShadow: '0 8px 24px rgba(124, 106, 247, 0.35)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                marginBottom: '12px',
+                transition: 'var(--transition)'
+              }}
+              onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseOut={e => e.currentTarget.style.transform = 'none'}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '22px'
+                }}>
+                  🤖
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: '15px', color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🤖 AI Agent
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.85)', marginTop: '2px' }}>
+                    Describe your symptoms — AI sets everything
+                  </div>
+                </div>
+              </div>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#FFFFFF'
+              }}>
+                <Sparkles size={16} />
+              </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <QuickCard 
                 icon={<Zap size={24} color="var(--color-accent)"/>}
@@ -210,6 +350,79 @@ export default function Dashboard() {
             </div>
           </section>
 
+          {/* Loop 5: Agent Insights Section */}
+          {showInsights && agentInsights && agentInsights.length > 0 && (
+            <section style={{ marginBottom: '24px' }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginBottom: '10px'
+              }}>
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: 'var(--color-primary)',
+                  letterSpacing: '0.5px'
+                }}>
+                  🤖 AI Insights
+                </span>
+              </div>
+
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                overflowX: 'auto',
+                paddingBottom: '8px',
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none'
+              }}>
+                {agentInsights.map((card, idx) => (
+                  <div
+                    key={idx}
+                    id={`agent-insight-card-${idx}`}
+                    style={{
+                      minWidth: '220px',
+                      maxWidth: '260px',
+                      flexShrink: 0,
+                      backgroundColor: '#13131A',
+                      border: '1px solid #1E1E2E',
+                      borderLeft: '4px solid var(--color-primary)',
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
+                    }}
+                  >
+                    <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>{card.icon}</span>
+                    <p style={{
+                      color: '#FFFFFF',
+                      fontSize: '0.82rem',
+                      lineHeight: '1.4',
+                      margin: 0,
+                      fontWeight: 500
+                    }}>
+                      {card.insight}
+                    </p>
+                    {card.action && (
+                      <p style={{
+                        color: 'var(--text-muted)',
+                        fontSize: '0.72rem',
+                        fontStyle: 'italic',
+                        margin: 0
+                      }}>
+                        {card.action}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {lastSession && (
             <section style={{ marginBottom: '24px' }}>
               <h3 style={{ fontSize: '16px', marginBottom: '12px', color: 'var(--text-muted)' }}>Last Session</h3>
@@ -236,6 +449,11 @@ export default function Dashboard() {
           )}
         </>
       )}
+
+      <AIAgentModal 
+        isOpen={isAIModalOpen} 
+        onClose={() => setIsAIModalOpen(false)} 
+      />
     </div>
   );
 }

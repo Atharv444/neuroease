@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "e2af787f-fcd4-4817-a430-94ceccd0084d",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\NeuroEase\\.archify\\architecture-ai-agent-20260929-110800\\candidate.json",
+  "output": "C:\\NeuroEase\\.archify\\architecture-ai-agent-20260929-110800\\agent-architecture.html",
+  "specification": {
+    "sha256": "7f8061669eb1499451b8d22ac3f6b800f929309675bc94dfd34f183092647e5f",
+    "bytes": 8136
+  },
+  "artifact": {
+    "sha256": "690c6af33e7ce562a3e79afce6764cee3e529cd6dc6a0d0fafe9e1828b18a988",
+    "bytes": 776177
+  }
+}

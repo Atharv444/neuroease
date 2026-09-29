@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "C:\\NeuroEase\\.archify\\architecture-runtime-architecture-20260929-105300\\candidate.json",
+    "sha256": "0f8ee0c404e6ceabd1eaa597ada3e2117b1235c6680e32f260232118119c7421",
+    "bytes": 7311
+  },
+  "artifact": {
+    "path": "C:\\NeuroEase\\.archify\\architecture-runtime-architecture-20260929-105300\\runtime-architecture.html",
+    "sha256": "5af84a78e03744ec759389851c2411b36289ff5178d472eaac705c66b8343b55",
+    "bytes": 772604
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "C:\\NeuroEase\\.archify\\architecture-runtime-architecture-20260929-105300\\runtime-architecture.finalize.json",
+    "summaryReceipt": "C:\\NeuroEase\\.archify\\architecture-runtime-architecture-20260929-105300\\runtime-architecture.finalize-summary.json",
+    "browserCheckReceipt": "C:\\NeuroEase\\.archify\\architecture-runtime-architecture-20260929-105300\\runtime-architecture.browser-check.json"
+  },
+  "update": {
+    "status": "unavailable",
+    "installedVersion": null,
+    "availableVersion": null,
+    "releaseNotes": null,
+    "checkedAt": null,
+    "source": null,
+    "noticeRequired": false,
+    "noticeText": null,
+    "reason": "invalid-local-release"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 8718
+}

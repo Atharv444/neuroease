@@ -4,15 +4,28 @@ import { useBluetooth } from '../context/BluetoothContext';
 export default function Settings() {
   const { isConnected, deviceName, disconnect } = useBluetooth();
   const [name, setName] = useState('Friend');
+  const [apiKey, setApiKey] = useState('');
   
   useEffect(() => {
     const saved = localStorage.getItem('neuroName');
     if (saved) setName(saved);
+    const savedKey = localStorage.getItem('gemini_api_key');
+    if (savedKey) setApiKey(savedKey);
   }, []);
 
   const handleNameChange = (e) => {
     setName(e.target.value);
     localStorage.setItem('neuroName', e.target.value);
+  };
+
+  const handleApiKeyChange = (e) => {
+    const val = e.target.value;
+    setApiKey(val);
+    if (val.trim()) {
+      localStorage.setItem('gemini_api_key', val.trim());
+    } else {
+      localStorage.removeItem('gemini_api_key');
+    }
   };
 
   return (
@@ -40,6 +53,32 @@ export default function Settings() {
               fontSize: '16px'
             }}
           />
+        </div>
+      </section>
+
+      <section style={{ marginBottom: '32px' }}>
+        <h3 style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '12px' }}>AI AGENT</h3>
+        <div style={{ backgroundColor: 'var(--bg-card)', borderRadius: 'var(--radius-card)', border: '1px solid var(--border-color)', padding: '16px' }}>
+          <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Google Gemini API Key</label>
+          <input 
+            type="password" 
+            placeholder="Enter API key..."
+            value={apiKey}
+            onChange={handleApiKeyChange}
+            style={{
+              width: '100%',
+              backgroundColor: 'var(--bg-main)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-primary)',
+              padding: '12px',
+              borderRadius: '8px',
+              fontFamily: 'inherit',
+              fontSize: '14px'
+            }}
+          />
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', display: 'block' }}>
+            Saved securely in your browser. Leave blank to use the built-in default key.
+          </span>
         </div>
       </section>
 

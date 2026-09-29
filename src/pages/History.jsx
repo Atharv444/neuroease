@@ -152,6 +152,43 @@ export default function History() {
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                       <span style={{ backgroundColor: 'var(--border-color)', padding: '2px 6px', borderRadius: '4px' }}>{s.duration} min</span>
                       <span>• {s.mode} {s.demo && '🧪'}</span>
+                      {s.aiGenerated && (
+                        <span 
+                          title={s.aiReasoning ? `AI: ${s.aiReasoning}` : 'AI Generated Session'} 
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '2px',
+                            backgroundColor: 'var(--color-primary-glow)',
+                            color: 'var(--color-primary)',
+                            padding: '1px 5px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: 600
+                          }}
+                        >
+                          🤖 AI
+                        </span>
+                      )}
+                      {s.agentAdapted && (
+                        <span 
+                          title="Agent adapted therapy mid-session based on your feedback"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '2px',
+                            backgroundColor: 'rgba(232, 168, 56, 0.15)',
+                            color: '#E8A838',
+                            border: '1px solid rgba(232, 168, 56, 0.3)',
+                            padding: '1px 5px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: 600
+                          }}
+                        >
+                          ⚡ Adapted
+                        </span>
+                      )}
                     </div>
                     {painVisual}
                   </div>
@@ -193,9 +230,22 @@ export default function History() {
                     <XAxis dataKey="name" stroke="#6B6B8A" fontSize={12} tickLine={false} axisLine={false} />
                     <YAxis stroke="#6B6B8A" fontSize={12} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={{ backgroundColor: '#13131A', borderColor: '#1E1E2E', color: '#E8E8F0' }} />
-                    <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                    <Bar dataKey="Before" fill="#E85555" radius={[4,4,0,0]} barSize={12} />
-                    <Bar dataKey="After" fill="#4CAF82" radius={[4,4,0,0]} barSize={12} />
+                    <Legend 
+                      content={() => (
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', fontSize: '12px', marginTop: '6px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#E85555', display: 'inline-block' }} />
+                            <span style={{ color: '#E8E8F0' }}>Before</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#4CAF82', display: 'inline-block' }} />
+                            <span style={{ color: '#E8E8F0' }}>After</span>
+                          </div>
+                        </div>
+                      )}
+                    />
+                    <Bar dataKey="Before" name="Before" fill="#E85555" radius={[4,4,0,0]} barSize={12} />
+                    <Bar dataKey="After" name="After" fill="#4CAF82" radius={[4,4,0,0]} barSize={12} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartWrapper>

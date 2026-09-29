@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "C:\\NeuroEase\\.archify\\architecture-ai-agent-20260929-110800\\candidate.json",
+    "sha256": "7f8061669eb1499451b8d22ac3f6b800f929309675bc94dfd34f183092647e5f",
+    "bytes": 8136
+  },
+  "artifact": {
+    "path": "C:\\NeuroEase\\.archify\\architecture-ai-agent-20260929-110800\\agent-architecture.html",
+    "sha256": "690c6af33e7ce562a3e79afce6764cee3e529cd6dc6a0d0fafe9e1828b18a988",
+    "bytes": 776177
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "C:\\NeuroEase\\.archify\\architecture-ai-agent-20260929-110800\\agent-architecture.finalize.json",
+    "summaryReceipt": "C:\\NeuroEase\\.archify\\architecture-ai-agent-20260929-110800\\agent-architecture.finalize-summary.json",
+    "browserCheckReceipt": "C:\\NeuroEase\\.archify\\architecture-ai-agent-20260929-110800\\agent-architecture.browser-check.json"
+  },
+  "update": {
+    "status": "unavailable",
+    "installedVersion": null,
+    "availableVersion": null,
+    "releaseNotes": null,
+    "checkedAt": null,
+    "source": null,
+    "noticeRequired": false,
+    "noticeText": null,
+    "reason": "invalid-local-release"
+  },
+  "visualReview": "not-requested",
+  "durationMs": 4593,
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "routesOverSuggestedBends": 1
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [],
+      "detours": [
+        {
+          "relationship": {
+            "id": "executor-to-monitor",
+            "from": "executor",
+            "to": "monitor_agent",
+            "label": "50% checkpoint",
+            "collectionIndex": 11,
+            "artifactIndex": 12
+          },
+          "bends": 3,
+          "stretch": 1
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "executor → monitor_agent needs 3 bends: move node executor or monitor_agent so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

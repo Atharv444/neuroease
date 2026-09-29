@@ -1,0 +1,291 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "NeuroEase AI Agent Architecture",
+    "subtitle": "Multi-Modal Autonomous Therapy Agent with Gemini 2.5 Flash, Self-Annealing, and Mid-Session Adaptation",
+    "output": ".archify/architecture-ai-agent-20260929-110800/agent-architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "patient",
+      "type": "external",
+      "label": "Patient / User",
+      "sublabel": "Symptom & Feedback",
+      "pos": [40, 300],
+      "size": [120, 60],
+      "tag": "Clinical Input"
+    },
+    {
+      "id": "modal_ui",
+      "type": "frontend",
+      "label": "Agent Modal UI",
+      "sublabel": "AIAgentModal & Chips",
+      "pos": [270, 300],
+      "size": [130, 60],
+      "tag": "Symptom Ingestion"
+    },
+    {
+      "id": "directive_rules",
+      "type": "security",
+      "label": "Therapy Directive",
+      "sublabel": "Clinical Guardrails",
+      "pos": [415, 160],
+      "size": [135, 60],
+      "tag": "Safety Policy"
+    },
+    {
+      "id": "gemini_api",
+      "type": "cloud",
+      "label": "Gemini 2.5 Flash",
+      "sublabel": "v1beta Model API",
+      "pos": [555, 40],
+      "size": [135, 60],
+      "tag": "Cloud LLM"
+    },
+    {
+      "id": "self_annealer",
+      "type": "security",
+      "label": "Self-Annealer",
+      "sublabel": "Rule-Based Fallback",
+      "pos": [695, 160],
+      "size": [135, 60],
+      "tag": "Zero Downtime"
+    },
+    {
+      "id": "orchestrator",
+      "type": "backend",
+      "label": "Agent Orchestrator",
+      "sublabel": "Context & Cascade",
+      "pos": [550, 300],
+      "size": [140, 60],
+      "tag": "Reasoning Core"
+    },
+    {
+      "id": "memory_engine",
+      "type": "backend",
+      "label": "Memory Engine",
+      "sublabel": "Historical Efficacy",
+      "pos": [550, 470],
+      "size": [140, 60],
+      "tag": "Personal History"
+    },
+    {
+      "id": "json_repair",
+      "type": "backend",
+      "label": "JSON Extraction",
+      "sublabel": "Fence Parser & Repair",
+      "pos": [855, 300],
+      "size": [130, 60],
+      "tag": "Parser & Repair"
+    },
+    {
+      "id": "sanitizer",
+      "type": "security",
+      "label": "Decision Sanitizer",
+      "sublabel": "Boundary Clamps",
+      "pos": [1100, 300],
+      "size": [135, 60],
+      "tag": "Safety Guard"
+    },
+    {
+      "id": "monitor_agent",
+      "type": "backend",
+      "label": "Mid-Session Monitor",
+      "sublabel": "50% Biofeedback Loop",
+      "pos": [1100, 470],
+      "size": [135, 60],
+      "tag": "Adaptive Retune"
+    },
+    {
+      "id": "executor",
+      "type": "backend",
+      "label": "Action Dispatcher",
+      "sublabel": "BLE & Demo State",
+      "pos": [1350, 300],
+      "size": [135, 60],
+      "tag": "Deterministic"
+    },
+    {
+      "id": "hardware_target",
+      "type": "external",
+      "label": "Wearable Glasses",
+      "sublabel": "Haptics, LEDs & Audio",
+      "pos": [1600, 300],
+      "size": [130, 60],
+      "tag": "Physical Target"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "NeuroEase Agent Runtime (Browser Client)",
+      "wraps": ["modal_ui", "directive_rules", "self_annealer", "orchestrator", "memory_engine", "json_repair", "sanitizer", "monitor_agent", "executor"],
+      "pad": 16
+    },
+    {
+      "kind": "security-group",
+      "label": "AI Core & Safety Guardrails",
+      "wraps": ["directive_rules", "orchestrator", "self_annealer"],
+      "pad": 12
+    }
+  ],
+  "connections": [
+    {
+      "id": "patient-to-modal",
+      "from": "patient",
+      "to": "modal_ui",
+      "label": "Symptom input",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "modal-to-orchestrator",
+      "from": "modal_ui",
+      "to": "orchestrator",
+      "label": "Trigger agent loop",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "directive-to-orchestrator",
+      "from": "directive_rules",
+      "to": "orchestrator",
+      "label": "Safety rules",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "orchestrator-to-gemini",
+      "from": "orchestrator",
+      "to": "gemini_api",
+      "label": "Prompt / Plan",
+      "variant": "default",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "memory-to-orchestrator",
+      "from": "memory_engine",
+      "to": "orchestrator",
+      "label": "User history",
+      "variant": "default",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "orchestrator-to-json",
+      "from": "orchestrator",
+      "to": "json_repair",
+      "label": "Raw LLM output",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "orchestrator-to-annealer",
+      "from": "orchestrator",
+      "to": "self_annealer",
+      "label": "Offline fallback",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "annealer-to-sanitizer",
+      "from": "self_annealer",
+      "to": "sanitizer",
+      "label": "Rule plan",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "top"
+    },
+    {
+      "id": "json-to-sanitizer",
+      "from": "json_repair",
+      "to": "sanitizer",
+      "label": "Parsed JSON",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "sanitizer-to-executor",
+      "from": "sanitizer",
+      "to": "executor",
+      "label": "Clamped plan",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "executor-to-hardware",
+      "from": "executor",
+      "to": "hardware_target",
+      "label": "GATT stream",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "executor-to-monitor",
+      "from": "executor",
+      "to": "monitor_agent",
+      "label": "50% checkpoint",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "right"
+    },
+    {
+      "id": "monitor-to-sanitizer",
+      "from": "monitor_agent",
+      "to": "sanitizer",
+      "label": "Retune adjustment",
+      "variant": "default",
+      "fromSide": "top",
+      "toSide": "bottom"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Symptom Ingestion & Prompt Synthesis",
+      "items": [
+        "Interactive multi-token parser interprets fragmented keywords, pain levels (1-10), and aura signals",
+        "Personal Memory Builder (buildUserMemory) analyzes >=3 past sessions for highest-efficacy modalities",
+        "Dynamic prompt framing combines symptom complaints, historical sensitivity, and clinical directives"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Model Routing & Self-Annealing",
+      "items": [
+        "Ranked multi-model cascade (gemini-3.1-flash-lite, gemini-3.6-flash, etc.) handles rate limits",
+        "Resilient JSON parser (extractJSON) strips markdown fences and repairs boundary bracket truncations",
+        "Zero-downtime deterministic rule engine (evaluateDirectiveRules) guarantees treatment if cloud fails"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Adaptive Mid-Session Feedback Loop",
+      "items": [
+        "Autonomous mid-session agent (getMidSessionAdjustment) fires at exactly 50% duration checkpoint",
+        "Biofeedback branches: Better maintains settings; Same steps vibration (+2); Worse shifts to calming audio",
+        "Real-time parameter recalibration executed without interrupting running therapy or resetting timers"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Clinical Safety & Parameter Clamping",
+      "items": [
+        "Non-negotiable safety clamps (sanitizeDecision) enforce motor limits (<=85%), safe RGB, and audio bounds",
+        "Photophobia and nausea guardrails automatically suppress vibration and harsh light during sensory overload",
+        "Emergency stop broadcast instantly halts active audio, haptics, and GATT queues within 10ms"
+      ]
+    }
+  ]
+}

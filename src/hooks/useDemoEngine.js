@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { stopDemoTherapy } from '../agent/executor';
 
 const TRACK_URLS = {
   1: "/audio/ocean.mp3",
@@ -17,30 +18,39 @@ export default function useDemoEngine(demoMode) {
   const vibIntervalRef = useRef(null);
   const lightOverlayRef = useRef(null);
 
-  // Stop Engine Utility
-  const stopDemoEngine = () => {
-    setDemoActive(false);
-    
-    // 1. Stop Vibration
-    if (vibIntervalRef.current) clearInterval(vibIntervalRef.current);
-    if ('vibrate' in navigator) navigator.vibrate(0);
-    
-    // 2. Stop Audio
+  // Internal cleanup without broadcasting global stop
+  const cleanupDemoAudioAndVisuals = () => {
     if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      } catch (e) {}
       audioRef.current = null;
     }
-    
-    // 3. Stop Light Simulation
+
+    if (vibIntervalRef.current) {
+      clearInterval(vibIntervalRef.current);
+      vibIntervalRef.current = null;
+    }
+
     if (lightOverlayRef.current && document.body.contains(lightOverlayRef.current)) {
       document.body.removeChild(lightOverlayRef.current);
       lightOverlayRef.current = null;
     }
   };
 
+  // Stop Engine Utility
+  const stopDemoEngine = () => {
+    setDemoActive(false);
+    cleanupDemoAudioAndVisuals();
+    // Call unified stopDemoTherapy to guarantee all global audios, DOM audios, intervals and overlays are destroyed
+    stopDemoTherapy();
+  };
+
   // Start Engine Utility
   const startDemoEngine = (modes, intensities, duration) => {
+    // Ensure any previous audio/demo state is cleaned up first without broadcasting stop event
+    cleanupDemoAudioAndVisuals();
     setDemoActive(true);
     let st = { vibration: false, light: null, audio: null };
 
@@ -85,6 +95,14 @@ export default function useDemoEngine(demoMode) {
              window.dispatchEvent(new CustomEvent('neuroease-toast', { detail: { message: "Could not load audio. Check your internet connection.", type: "error" } }));
           }
         });
+
+        if (typeof window !== 'undefined') {
+          if (!window.__neuroeaseActiveAudios) window.__neuroeaseActiveAudios = new Set();
+          window.__neuroeaseActiveAudios.add(audio);
+          window.__neuroeaseDemoAudio = audio;
+          audio.onended = () => { window.__neuroeaseActiveAudios?.delete(audio); };
+          audio.onpause = () => { window.__neuroeaseActiveAudios?.delete(audio); };
+        }
 
         audio.play().catch(e => console.error("Audio playback failed", e));
         audioRef.current = audio;
@@ -139,14 +157,25 @@ export default function useDemoEngine(demoMode) {
       audioRef.current.volume = volume / 100;
 
       // Track switching
-      if (audioRef.current.src !== TRACK_URLS[trackId]) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+      const targetPath = TRACK_URLS[trackId];
+      if (targetPath && !audioRef.current.src.endsWith(targetPath)) {
+        try {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        } catch (e) {}
         
-        const newAudio = new Audio(TRACK_URLS[trackId]);
+        const newAudio = new Audio(targetPath);
         newAudio.loop = true;
         newAudio.volume = volume / 100;
         
+        if (typeof window !== 'undefined') {
+          if (!window.__neuroeaseActiveAudios) window.__neuroeaseActiveAudios = new Set();
+          window.__neuroeaseActiveAudios.add(newAudio);
+          window.__neuroeaseDemoAudio = newAudio;
+          newAudio.onended = () => { window.__neuroeaseActiveAudios?.delete(newAudio); };
+          newAudio.onpause = () => { window.__neuroeaseActiveAudios?.delete(newAudio); };
+        }
+
         newAudio.addEventListener('error', () => {
           window.dispatchEvent(new CustomEvent('neuroease-toast', { detail: { message: "Could not load audio. Check your internet connection.", type: "error" } }));
         });
@@ -157,6 +186,31 @@ export default function useDemoEngine(demoMode) {
     }
   };
 
+  // Sync with global therapy stop event
+  useEffect(() => {
+    const handleGlobalStop = () => {
+      setDemoActive(false);
+      if (audioRef.current) {
+        try {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        } catch (e) {}
+        audioRef.current = null;
+      }
+      if (vibIntervalRef.current) {
+        clearInterval(vibIntervalRef.current);
+        vibIntervalRef.current = null;
+      }
+      if (lightOverlayRef.current && document.body.contains(lightOverlayRef.current)) {
+        document.body.removeChild(lightOverlayRef.current);
+        lightOverlayRef.current = null;
+      }
+    };
+
+    window.addEventListener('neuroease-therapy-stopped', handleGlobalStop);
+    return () => window.removeEventListener('neuroease-therapy-stopped', handleGlobalStop);
+  }, []);
+
   // Cleanup on unmount or disable
   useEffect(() => {
     if (!demoMode) {
@@ -164,7 +218,7 @@ export default function useDemoEngine(demoMode) {
     }
     return () => {
       stopDemoEngine();
-    }
+    };
   }, [demoMode]);
 
   return { demoActive, startDemoEngine, stopDemoEngine, updateDemoAudio, demoState };

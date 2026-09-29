@@ -1,0 +1,264 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "NeuroEase Runtime Architecture",
+    "subtitle": "Autonomous Neurological Therapy PWA with Gemini AI & Smart Glasses Web Bluetooth",
+    "output": ".archify/architecture-runtime-architecture-20260929-105300/runtime-architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Patient / User",
+      "sublabel": "Web Browser (PWA)",
+      "pos": [40, 300],
+      "size": [130, 60],
+      "tag": "User Action"
+    },
+    {
+      "id": "spa",
+      "type": "frontend",
+      "label": "NeuroEase SPA",
+      "sublabel": "React 18 & Vite",
+      "pos": [300, 300],
+      "size": [130, 60],
+      "tag": "HUD & Modals"
+    },
+    {
+      "id": "directive",
+      "type": "security",
+      "label": "Therapy Directive",
+      "sublabel": "Clinical Guardrails",
+      "pos": [560, 160],
+      "size": [140, 60],
+      "tag": "Safety Rules"
+    },
+    {
+      "id": "gemini_api",
+      "type": "cloud",
+      "label": "Gemini 2.5 Flash",
+      "sublabel": "v1beta REST API",
+      "pos": [740, 40],
+      "size": [150, 60],
+      "tag": "Cloud LLM"
+    },
+    {
+      "id": "orchestrator",
+      "type": "backend",
+      "label": "Agent Orchestrator",
+      "sublabel": "Intent & Plan Engine",
+      "pos": [740, 300],
+      "size": [150, 60],
+      "tag": "Autonomous Agent"
+    },
+    {
+      "id": "storage",
+      "type": "database",
+      "label": "Client Storage",
+      "sublabel": "localStorage / Cache",
+      "pos": [300, 470],
+      "size": [130, 60],
+      "tag": "Local Persistence"
+    },
+    {
+      "id": "memory",
+      "type": "backend",
+      "label": "Memory Engine",
+      "sublabel": "Symptom & Profile Hist.",
+      "pos": [560, 470],
+      "size": [140, 60],
+      "tag": "Context Builder"
+    },
+    {
+      "id": "executor",
+      "type": "backend",
+      "label": "Therapy Executor",
+      "sublabel": "Action Dispatcher",
+      "pos": [1030, 300],
+      "size": [140, 60],
+      "tag": "State Machine"
+    },
+    {
+      "id": "demo_engine",
+      "type": "backend",
+      "label": "Simulation Engine",
+      "sublabel": "Web Audio & Visuals",
+      "pos": [1030, 470],
+      "size": [140, 60],
+      "tag": "Offline Fallback"
+    },
+    {
+      "id": "ble_client",
+      "type": "frontend",
+      "label": "Web Bluetooth",
+      "sublabel": "GATT Service API",
+      "pos": [1300, 300],
+      "size": [150, 60],
+      "tag": "BLE TX/RX"
+    },
+    {
+      "id": "glasses_hw",
+      "type": "external",
+      "label": "Smart Glasses",
+      "sublabel": "Hardware Wearable",
+      "pos": [1600, 300],
+      "size": [140, 60],
+      "tag": "Haptics & Audio"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "NeuroEase Client Runtime (Browser PWA)",
+      "wraps": ["spa", "storage", "directive", "memory", "orchestrator", "executor", "demo_engine", "ble_client"],
+      "pad": 16
+    },
+    {
+      "kind": "security-group",
+      "label": "AI Decision & Safety Boundary",
+      "wraps": ["directive", "memory", "orchestrator"],
+      "pad": 12
+    }
+  ],
+  "connections": [
+    {
+      "id": "user-to-spa",
+      "from": "user",
+      "to": "spa",
+      "label": "Symptom input & presets",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "spa-to-orchestrator",
+      "from": "spa",
+      "to": "orchestrator",
+      "label": "Trigger therapy session",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "directive-to-orchestrator",
+      "from": "directive",
+      "to": "orchestrator",
+      "label": "Clinical safety rules",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "orchestrator-to-gemini",
+      "from": "orchestrator",
+      "to": "gemini_api",
+      "label": "Prompt / Therapy JSON",
+      "variant": "default",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "spa-to-storage",
+      "from": "spa",
+      "to": "storage",
+      "label": "Save session logs",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "storage-to-memory",
+      "from": "storage",
+      "to": "memory",
+      "label": "Read neuroHistory",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "memory-to-orchestrator",
+      "from": "memory",
+      "to": "orchestrator",
+      "label": "Symptom context",
+      "variant": "default",
+      "fromSide": "top",
+      "toSide": "bottom"
+    },
+    {
+      "id": "orchestrator-to-executor",
+      "from": "orchestrator",
+      "to": "executor",
+      "label": "Validated parameters",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "executor-to-ble",
+      "from": "executor",
+      "to": "ble_client",
+      "label": "GATT command stream",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "ble-to-glasses",
+      "from": "ble_client",
+      "to": "glasses_hw",
+      "label": "BLE characteristic write",
+      "variant": "emphasis",
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "executor-to-demo",
+      "from": "executor",
+      "to": "demo_engine",
+      "label": "Audio / visual simulation",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Client Presentation & Therapy HUD",
+      "items": [
+        "React 18 SPA with responsive therapy HUD, real-time countdown timer, and mid-session check-ins",
+        "Interactive AI Agent modal converts natural language patient complaints into structured therapy plans",
+        "Automatic fallback to manual frequency and intensity sliders if offline or API key is missing"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Agentic Intelligence & Safety",
+      "items": [
+        "Google Gemini 2.5 Flash produces custom vibration frequencies, binaural beats, and light pulsation",
+        "Hard clinical guardrails (Therapy Directive) clamp motor intensity (max 85%) and light brightness",
+        "Mid-session adaptation agent intercepts timer at 50% mark to dynamically retune or ease therapy"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Hardware Actuation & Demo Engine",
+      "items": [
+        "Web Bluetooth GATT Client streams ASCII control frames (M:L/R, A:Hz, L:Hz) to Smart Glasses",
+        "Dual bilateral eccentric rotating mass (ERM) motors provide soothing neurological stimulation",
+        "Built-in Demo Simulation Engine triggers Web Audio API tones and CSS pulse effects when disconnected"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Zero-Cloud Local Data Architecture",
+      "items": [
+        "Zero server-side database: all symptom logs, presets, and Gemini keys remain in client localStorage",
+        "User Memory Engine mines local session history to personalize future prompt recommendations",
+        "Fail-safe deterministic executor guarantees instant emergency stop even during network timeouts"
+      ]
+    }
+  ]
+}
