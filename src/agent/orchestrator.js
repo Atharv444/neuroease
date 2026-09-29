@@ -4,17 +4,19 @@
 import { THERAPY_DIRECTIVE } from './directive.js';
 import { buildUserMemory } from './memory.js';
 
-const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
+async function callTherapyAPI(system, messages) {
+  const response = await fetch('/api/therapy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system, messages })
+  });
 
-// Ranked by active availability & low latency
-const CANDIDATE_MODELS = [
-  'gemini-3.1-flash-lite',
-  'gemini-3.6-flash',
-  'gemini-3-flash-preview',
-  'gemini-3.8-flash',
-  'gemini-flash-latest',
-  'gemma-4-26b-a4b-it'
-];
+  if (!response.ok) {
+    throw new Error('Therapy API call failed');
+  }
+
+  return await response.json();
+}
 
 function formatReasoning(reasoning) {
   if (typeof reasoning !== 'string' || !reasoning.trim()) {
@@ -80,19 +82,6 @@ function extractJSONArray(text) {
   return null;
 }
 
-function getApiKey() {
-  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ANTHROPIC_API_KEY) {
-    return import.meta.env.VITE_ANTHROPIC_API_KEY;
-  }
-  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) {
-    return import.meta.env.VITE_GEMINI_API_KEY;
-  }
-  if (typeof localStorage !== 'undefined') {
-    const stored = localStorage.getItem('gemini_api_key') || localStorage.getItem('geminiApiKey');
-    if (stored) return stored;
-  }
-  return apiKey;
-}
 
 /**
  * Deterministic clinical therapy rule engine adhering strictly to THERAPY_DIRECTIVE.
@@ -233,97 +222,48 @@ function evaluateDirectiveRules(input = '') {
 }
 
 async function retryWithStrictJSON(userSymptoms) {
-  const apiKey = getApiKey();
   const strictPrompt = `${userSymptoms}\n\nIMPORTANT: You must return ONLY a single valid JSON object adhering to the schema, with no markdown, no quotes outside JSON, and no explanation.`;
 
-  for (const model of CANDIDATE_MODELS) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: THERAPY_DIRECTIVE }] },
-          contents: [{ role: 'user', parts: [{ text: strictPrompt }] }],
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: 'application/json'
-          }
-        })
-      });
-
-      if (!response.ok) continue;
-
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      const parsed = extractJSON(text);
-      if (parsed) return parsed;
-    } catch {
-      // Try next candidate
-    }
+  try {
+    const data = await callTherapyAPI(
+      THERAPY_DIRECTIVE,
+      [{ role: 'user', content: strictPrompt }]
+    );
+    const text = data.content?.[0]?.text || data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parsed = extractJSON(text);
+    if (parsed) return parsed;
+  } catch (err) {
+    console.warn('retryWithStrictJSON error:', err);
   }
 
   return evaluateDirectiveRules(userSymptoms);
 }
 
 export async function getTherapyDecision(userSymptoms) {
-  if (!import.meta.env.VITE_ANTHROPIC_API_KEY) {
-    console.error('API key missing. Add VITE_ANTHROPIC_API_KEY to .env');
-    return null;
-  }
   const userMemory = buildUserMemory();
   const effectivePrompt = userMemory
     ? `${userMemory}\n\nCurrent symptoms: ${userSymptoms}`
     : userSymptoms;
 
-  const apiKey = getApiKey();
-
-  // Try live Gemini API with candidate models
-  for (const model of CANDIDATE_MODELS) {
+  try {
+    const data = await callTherapyAPI(
+      THERAPY_DIRECTIVE,
+      [{ role: 'user', content: effectivePrompt }]
+    );
+    const text = data.content?.[0]?.text || data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parsed = extractJSON(text);
+    if (!parsed) throw new Error('Empty JSON response from model');
+    return parsed;
+  } catch (err) {
+    console.warn('getTherapyDecision API call error:', err.message);
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: THERAPY_DIRECTIVE }]
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: effectivePrompt }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: 'application/json'
-          }
-        })
-      });
-
-      if (!response.ok) {
-        console.warn(`Gemini model ${model} responded with HTTP ${response.status}`);
-        continue;
-      }
-
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      try {
-        const parsed = extractJSON(text);
-        if (!parsed) throw new Error('Empty JSON response from model');
-        return parsed;
-      } catch {
-        return await retryWithStrictJSON(effectivePrompt);
-      }
-    } catch (err) {
-      console.warn(`Gemini model ${model} fetch exception:`, err.message);
+      return await retryWithStrictJSON(effectivePrompt);
+    } catch {
+      // Fallback below
     }
   }
 
-  // If all remote API models experienced transient 503/429 spikes or network failures,
-  // self-anneal by applying the clinical therapy directive rules directly.
+  // If remote API call fails, self-anneal by applying the clinical therapy directive rules directly.
   console.info('Applying clinical directive engine self-annealing fallback...');
   return evaluateDirectiveRules(userSymptoms);
 }
@@ -334,7 +274,6 @@ export async function getTherapyDecision(userSymptoms) {
  */
 export async function getMidSessionAdjustment(sessionContext = {}, feedbackType = 'same') {
   const isSame = feedbackType === 'same';
-  const apiKey = getApiKey();
   const minutesRun = sessionContext.minutesRun || 5;
   const currentMode = sessionContext.mode || 'combined';
   const vibration = sessionContext.vibrationIntensity || 5;
@@ -358,32 +297,18 @@ Recommend a mode switch. Return JSON:
   "newAudio": 1-5,
   "message": "one short sentence for user" }`;
 
-  for (const model of CANDIDATE_MODELS) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: 'application/json'
-          }
-        })
-      });
-
-      if (!response.ok) continue;
-
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      const parsed = extractJSON(text);
-      if (parsed && parsed.action) {
-        return parsed;
-      }
-    } catch (e) {
-      console.warn(`Mid-session adjustment model ${model} error:`, e);
+  try {
+    const data = await callTherapyAPI(
+      'You are a migraine therapy adjustment assistant. Return valid JSON only.',
+      [{ role: 'user', content: prompt }]
+    );
+    const text = data.content?.[0]?.text || data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parsed = extractJSON(text);
+    if (parsed && parsed.action) {
+      return parsed;
     }
+  } catch (e) {
+    console.warn('Mid-session adjustment API error:', e);
   }
 
   // Clinical Deterministic Fallback
@@ -420,7 +345,6 @@ Recommend a mode switch. Return JSON:
  */
 export async function getDashboardInsights(userMemory) {
   if (!userMemory || !userMemory.trim()) return [];
-  const apiKey = getApiKey();
 
   const prompt = `Based on this user's migraine history:
 ${userMemory}
@@ -436,36 +360,22 @@ Return a JSON array of 1-3 short insight cards:
 
 Focus on: patterns, timing, what works, what to try next. Be specific not generic. Max 12 words per insight. Return ONLY JSON.`;
 
-  for (const model of CANDIDATE_MODELS) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.3,
-            responseMimeType: 'application/json'
-          }
-        })
-      });
-
-      if (!response.ok) continue;
-
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      const parsedArray = extractJSONArray(text);
-      if (Array.isArray(parsedArray) && parsedArray.length > 0) {
-        return parsedArray.slice(0, 3).map(card => ({
-          icon: card.icon || '💡',
-          insight: card.insight || 'Personalized therapy pattern observed',
-          action: card.action || null
-        }));
-      }
-    } catch (e) {
-      console.warn(`Dashboard insights model ${model} error:`, e);
+  try {
+    const data = await callTherapyAPI(
+      'You are a neurological health insight generator. Return ONLY a valid JSON array.',
+      [{ role: 'user', content: prompt }]
+    );
+    const text = data.content?.[0]?.text || data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parsedArray = extractJSONArray(text);
+    if (Array.isArray(parsedArray) && parsedArray.length > 0) {
+      return parsedArray.slice(0, 3).map(card => ({
+        icon: card.icon || '💡',
+        insight: card.insight || 'Personalized therapy pattern observed',
+        action: card.action || null
+      }));
     }
+  } catch (e) {
+    console.warn('Dashboard insights API error:', e);
   }
 
   // Clinical Deterministic Fallback based on user memory
